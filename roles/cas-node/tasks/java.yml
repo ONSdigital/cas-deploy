@@ -1,0 +1,22 @@
+---
+
+- name: ensure java is installed
+  yum:
+    name: java
+    state: present
+
+- name: ensure default-java is configured
+  file:
+    src: /usr/lib/jvm/jre-1.8.0-openjdk-1.8.0.161-0.b14.el7_4.x86_64
+    dest: /usr/lib/jvm/default-java
+    owner: root
+    group: root
+    state: link
+
+- name: deploy default-java profile snippet
+  copy:
+    src: default-java.sh
+    dest: /etc/profile.d/java_home.sh
+    owner: root
+    group: root
+    mode: 0644
