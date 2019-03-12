@@ -1,0 +1,6 @@
+---
+
+- name: ensure the latest version of rabbit-mq is installed
+  yum:
+    name: rabbitmq-server
+    state: latest
