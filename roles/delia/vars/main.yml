@@ -1,0 +1,4 @@
+artifactory_host: foo
+delia_user: delia
+shared_web_grp: delia_web
+delia_base_dir: delia

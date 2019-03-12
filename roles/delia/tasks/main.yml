@@ -1,0 +1,49 @@
+---
+
+- name: ensure the shared web group exists
+  group:
+    name: "{{ shared_web_grp }}"
+    state: present
+
+# Note: We override the default system shell to allow the user to login so build
+# artifcats can be deployed over SSH
+# TODO: Should a different user do this?
+- name: ensure delia user exits
+  user:
+    name: "{{ delia_user }}"
+    comment: delia system user
+    group: "{{ delia_user }}"
+    groups: "{{ shared_web_grp }}"
+    state: present
+    system: yes
+    shell: /bin/bash
+
+# TODO: Deploy delias public key to allow the build boxes to login
+
+- name: ensure required packages are installed
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - nginx
+    - gcc
+    - python36
+    - python36-devel
+    - openldap-devel
+
+- name: ensure delia base directory exists
+  file:
+    name: "/home/{{ delia_user }}/{{ delia_base_dir }}"
+    state: directory
+    owner: "{{ delia_user }}"
+    group: "{{ delia_user }}"
+
+- name: ensure python virtual environment is configured
+  pip:
+    name:
+      - flask
+      - flask_session
+      - python_ldap
+      - pytest
+      - requests
+      - uwsgi
