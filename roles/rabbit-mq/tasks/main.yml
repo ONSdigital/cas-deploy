@@ -32,3 +32,9 @@
   yum:
     name: rabbitmq-server
     state: latest
+
+- name: ensure the ampmq ports are open
+  firewalld:
+    port: 5671-5672/tcp
+    permanent: yes
+    state: enabled
