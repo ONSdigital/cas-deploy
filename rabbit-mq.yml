@@ -1,0 +1,6 @@
+- name: Configure a rabbit-mq server
+  hosts: all
+  remote_user: jonny
+  become: yes
+  roles:
+    - rabbit-mq
