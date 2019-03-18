@@ -5,6 +5,11 @@
     name: "{{ shared_web_grp }}"
     state: present
 
+- name: ensure the delia user group exists
+  group:
+    name: "{{ delia_user }}"
+    state: present
+
 # Note: We override the default system shell to allow the user to login so build
 # artifcats can be deployed over SSH
 # TODO: Should a different user do this?
@@ -20,16 +25,31 @@
 
 # TODO: Deploy delias public key to allow the build boxes to login
 
+- name: ensure epel is enabled
+  yum:
+    name: epel-release
+    state: present
+
 - name: ensure required packages are installed
   yum:
     name: "{{ packages }}"
   vars:
     packages:
+    - epel-release
     - nginx
     - gcc
     - python36
     - python36-devel
     - openldap-devel
+    - python-setuptools
+    - python-pip
+    - python-devel
+
+- name: ensure nginx is running and enabled at boot
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes
 
 - name: ensure delia base directory exists
   file:
