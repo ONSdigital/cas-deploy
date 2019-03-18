@@ -1,0 +1,6 @@
+- name: Configure a CAS node
+  hosts: all
+  remote_user: jonny
+  become: yes
+  roles:
+    - cas-node
