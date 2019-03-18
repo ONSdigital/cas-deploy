@@ -1,0 +1,6 @@
+- name: Configure a delia node
+  hosts: all
+  remote_user: jonny
+  become: yes
+  roles:
+    - delia
