@@ -1,0 +1,9 @@
+### User configurable
+dst_path: "/opt"
+local_path: "/tmp"
+confluent_version: "5.0.0"
+
+### Constructed
+confluent_base: http://packages.confluent.io/archive
+confluent_package_file: "{{ confluent_version[:3] }}/confluent-oss-{{ confluent_version }}-2.11.tar.gz"
+confluent_url: "{{ confluent_base }}/{{ confluent_package_file }}"

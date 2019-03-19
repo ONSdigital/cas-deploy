@@ -1,0 +1,124 @@
+---
+
+- name: ensure the kafka group exists
+  group:
+    name: kafka
+    state: present
+
+- name: ensure the kafka user exits
+  user:
+    name: kafka
+    comment: kafka system user
+    group: kafka
+    state: present
+    system: yes
+
+- name: check if confluent is already installed
+  stat:
+    path: "{{ dst_path }}/confluent-{{ confluent_version }}"
+  register: unarchived_confluent_package
+
+# If confluent kafka is not instaled, download and install it
+- block: 
+  # Download confluent
+  - name: download confluent
+    get_url:
+      url: "{{ confluent_url }}"
+      dest: "{{ dst_path }}"
+      force: yes
+
+  # If the box fails to download confluent, grab it locally and transfer across
+  rescue: 
+  - name: download confluent locally
+    get_url:
+      url: "{{ confluent_url }}"
+      dest: "{{ local_path }}"
+      force: yes
+    connection: local
+    become: no
+    run_once: yes
+
+  - name: transfer confluent to host
+    copy:
+      src: "/tmp/confluent-oss-{{ confluent_version }}-2.11.tar.gz"
+      dest: "{{ dst_path }}/confluent-oss-{{ confluent_version }}-2.11.tar.gz"
+
+  # Install kafka
+  always:
+  - name: unarchive confluent package
+    unarchive:
+      src: "{{ dst_path }}/confluent-oss-{{ confluent_version }}-2.11.tar.gz"
+      dest: "{{ dst_path }}"
+      mode: 0775
+      owner: kafka
+      group: kafka
+      remote_src: yes
+
+  - name: clean up
+    file:
+      path: "{{ dst_path }}/confluent-oss-{{ confluent_version }}-2.11.tar.gz"
+      state: absent
+    
+  when: not unarchived_confluent_package.stat.exists
+
+- name: ensure kafka data directories exists
+  file:
+    name: /data/{{ item.name }}
+    state: directory
+    owner: kafka
+    group: kafka
+    mode: 0755
+  with_items:
+    - { name: 'kafka' }
+    - { name: 'logs' }
+    - { name: 'zookeeper' }
+
+- name: ensure kafka symlink exsits
+  file:
+    src: "{{ dst_path }}/confluent-{{ confluent_version }}"
+    dest: "{{ dst_path }}/kafka"
+    owner: kafka
+    group: kafka
+    state: link
+
+- name: ensure log symlink exsists
+  file:
+    src: /data/logs
+    dest: "{{ dst_path }}/kafka/logs"
+    owner: kafka
+    group: kafka
+    state: link
+
+- lineinfile:
+    path: /opt/kafka/etc/kafka/zookeeper.properties
+    regexp: '^dataDir='
+    line: 'dataDir=/data/zookeeper'
+
+# TODO: Secrets management
+- lineinfile:
+    path: /opt/kafka/etc/kafka/server.properties
+    regexp: "{{ item.reg }}"
+    line: "{{ item.line}} "
+  with_items:
+    - { reg: '^num.io.threads=', line: 'num.io.threads=4' }
+    - { reg: '^log.dirs=', line: 'log.dirs=/data/kafka' }
+    - { reg: '^advertised.listeners=', line: 'advertised.listeners=PLAINTEXT://xxxx:9092' }
+    - { reg: '^listeners=', line: 'listeners=PLAINTEXT://xxxx:9092' }
+
+- name: install services
+  copy:
+    src: "{{ item }}.service"
+    dest: "/etc/systemd/system/{{ item }}.service"
+  with_items:
+    - kafka
+    - kafka-zookeeper
+
+- name: start and enable services
+  systemd:
+    name: "{{ item }}.service"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  with_items:
+    - kafka
+    - kafka-zookeeper

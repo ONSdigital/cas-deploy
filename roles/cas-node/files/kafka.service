@@ -1,0 +1,21 @@
+[Unit]
+Description=Apache Kafka server (broker)
+Requires=network.target remote-fs.target
+After=network.target remote-fs.target kafka-zookeeper.service
+
+[Service]
+Type=forking
+User=kafka
+Group=kafka
+Environment=JAVA_HOME=/usr/lib/jvm/default-java
+ExecStart=/opt/kafka/bin/kafka-server-start /opt/kafka/etc/kafka/server.properties
+ExecStop=/opt/kafka/bin/kafka-server-stop
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=120
+RestartPreventExitStatus=255
+StartLimitBurst=0
+
+[Install]
+WantedBy=multi-user.target
